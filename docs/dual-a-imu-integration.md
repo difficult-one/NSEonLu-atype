@@ -23,7 +23,7 @@
 
 轴向依据来自 [RoboMaster 官方 A 板原理图与位号图](https://cdn-hz.robomaster.com/tem/RoboMaster%20%E5%BC%80%E5%8F%91%E6%9D%BF%E5%8E%9F%E7%90%86%E5%9B%BE%26%E4%BD%8D%E5%8F%B7%E5%9B%BE.zip) 和 [TDK MPU-6500 数据手册第 36 页图 14](https://product.tdk.cn/system/files/dam/doc/product/sensor/mortion-inertial/imu/data_sheet/mpu-6500-datasheet2.pdf)：官方板图中 J10（XT30）在左、J14（USB）在右，U3 的 1 脚位于芯片左下角；芯片 1 脚角对应 `(-X,+Y)`，+Z 离开封装上表面。因此官方板图中原生 +X 向上、+Y 向左，转到当前照片方向后得到上表。
 
-现有轮速、控制与 VOFA 速度公共接口继续使用前/右定义。为兼容该接口，远端融合仅在边界换算：公共 `(vx,vy)` 进入融合时变为 A 板 `(-vx,+vy)`；导航系结果转回 A 板后，再变为公共 `(-vA_x,+vA_y)`。配对轮速输出、失效时的轮速回退同样遵循公共接口。这个边界换算不改变原生 IMU 数据和 +Y 116 mm 配置。
+现有轮速、控制与 VOFA 速度公共接口保留原有定义。根据 2026-11-16 四份实测 CSV 的坐标一致性分析，公共轮速 `(vx,vy)` 进入远端融合时按 A 板分量 `(+vx,+vy)` 处理；导航系结果转回 A 板后，以公共 `(+vA_x,+vA_y)` 输出。配对轮速输出同样保持 X/Y 同号，失效时直接回退公共轮速。此前入口、出口各取反 X 的约定会使自转行进的导航速度方向错误旋转，已同步修正；不改变原生 IMU 数据和 +Y 116 mm 配置。照片中的原生轴向不能单独证明公共 `vx` 与实物车头的对应关系，仍需实车正反向检查。
 
 ## 接线与构建
 
@@ -61,6 +61,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-board.ps1 -Act
 
 在底盘零输出、板固定的条件下，先静止等待 INS 初始化。用主板卡尔曼档 `imu_gx_radps/imu_gy_radps/imu_gz_radps` 检查绕 A 板 +X、+Y、+Z 的右手正转：对应原生陀螺仪轴应为正值，反转为负值。照片方向按上表核对，不给原始角速度再套用公共速度的前/右定义。
 
-再做水平及倾斜后静止检查：源导航系去重力加速度应回到接近零，导航系分量不能直接当作 A 板机体系分量。沿 A 板正反 X/Y 分别平移、起停，检查公共接口中 `vx=-vA_x`、`vy=+vA_y`，并确认轮速、融合结果与配对轮速一致；远端断流回退后符号应保持。绕中心正反旋转并起停，比较原始 IMU 与融合输入中心加速度，检查 +Y 116 mm 杆臂补偿。
+再做水平及倾斜后静止检查：源导航系去重力加速度应回到接近零，导航系分量不能直接当作 A 板机体系分量。沿 A 板正反 X/Y 分别平移、起停，检查公共接口中 `vx=+vA_x`、`vy=+vA_y`，并确认轮速、融合结果与配对轮速一致；远端断流回退后符号应保持。绕中心正反旋转并起停，比较原始 IMU 与融合输入中心加速度，检查 +Y 116 mm 杆臂补偿。
 
-缺少独立运动参考时，不将观察到 FUSED 当作精度验收；具体试次见 [实测手册](kalman-chassis-test-and-acceptance.md)。
+缺少独立运动参考时，不将观察到 FUSED 当作精度验收；具体试次见 [实测手册](kalman-chassis-test-and-acceptance.md)。四份 CSV 的 X 映射修正、回放命令与剩余误差见 [2026-11-16 验证记录](superpowers/verification/2026-11-16-imu-x-mapping.md)。

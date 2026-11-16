@@ -213,10 +213,11 @@ void ChassisRemoteFusionUpdate(ChassisRemoteFusion_s *state,
     }
     out->pair_span_ms=span;
     RememberSource(s,remote,estimated,out->source_step_ms,out->receive_step_ms);
-    /* Existing public wheel axes are forward/right. The installed A board's
-     * native axes are backward/right/up; raw IMU/nav data keep their own axes. */
+    /* Recorded public wheel X/Y agree with the installed A-board X/Y.
+     * Reflecting X here makes nav velocity rotate twice during a spin.
+     * Raw IMU/nav data retain their source coordinates. */
     ChassisVelocityCenterSample_s sample={.imu_us=remote->sample.tick_ms*1000U,
-        .wheel_us=remote->sample.tick_ms*1000U,.wheel_b_mps={-paired[0],paired[1]}};
+        .wheel_us=remote->sample.tick_ms*1000U,.wheel_b_mps={paired[0],paired[1]}};
     for(unsigned i=0;i<3;++i) {
         sample.imu_offset_n_m[i]=pose.imu_offset_nav_m[i];
         sample.accel_n_mps2[i]=remote->sample.accel_n_mps2[i];
@@ -265,13 +266,13 @@ void ChassisRemoteFusionUpdate(ChassisRemoteFusion_s *state,
         ResetPipeline(s);out->status=CHASSIS_REMOTE_REJECTED;goto done;
     }
     /* Invert nav -> native board, then return public forward/right velocities. */
-    const float vx=-(d*filtered.velocity_n_mps[0]-b*filtered.velocity_n_mps[1])/det;
+    const float vx=(d*filtered.velocity_n_mps[0]-b*filtered.velocity_n_mps[1])/det;
     const float vy=(a*filtered.velocity_n_mps[1]-c*filtered.velocity_n_mps[0])/det;
     if(!isfinite(vx) || !isfinite(vy)) {
         ResetPipeline(s);out->status=CHASSIS_REMOTE_REJECTED;goto done;
     }
     s->held=(ChassisRemoteFusionOutput_s){.valid=true,.tick_ms=middle_local_ms,
-        .vx_mps=vx,.vy_mps=vy,.paired_wheel_mps={-center.wheel_b_mps[0],center.wheel_b_mps[1]},
+        .vx_mps=vx,.vy_mps=vy,.paired_wheel_mps={center.wheel_b_mps[0],center.wheel_b_mps[1]},
         .center_accel_n_mps2={center.accel_n_mps2[0],center.accel_n_mps2[1]},.pair_span_ms=middle_span};
     Increment(&s->updates);
     PublishHeld(s,out);

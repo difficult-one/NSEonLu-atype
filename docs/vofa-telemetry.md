@@ -43,7 +43,7 @@ make -j8 PROFILE=atype-vehicle BUILD_DIR=build/kalman-main ONE_BOARD=1 CHASSIS_C
 
 功率采集将最后一个参数改为 `VOFA_OBSERVATION_PROFILE=1`，输出目录改为 `build/power-main`。CMake 接受同名 `-DVOFA_OBSERVATION_PROFILE=1` 或 `2`；手动 Make/CMake 不读取 `BOARD_FLASH_1_` 前缀预设。新档输出 `I0=4/5`，旧 `I0=2/3` 不能套用新布局。
 
-固定安装、芯片偏移和滤波噪声见 [远端 IMU 配置](../config/30_velocity_observation/chassis_remote_imu_config.h)。远端融合采用以底盘中心为原点的 A 板原生轴，芯片偏移 `(0,+0.116,0) m`、安装四元数 `[1,0,0,0]`。轮速、目标速度、融合速度和配对轮速的 VOFA 公共接口继续为前/右；融合入口将公共 `(vx,vy)` 转为 A 板 `(-vx,+vy)`，出口反向换算。`CHASSIS_REMOTE_IMU_CONFIG_VERIFIED=0` 不会阻止算法运行，但不能用于证明精度。
+固定安装、芯片偏移和滤波噪声见 [远端 IMU 配置](../config/30_velocity_observation/chassis_remote_imu_config.h)。远端融合采用以底盘中心为原点的 A 板原生轴，芯片偏移 `(0,+0.116,0) m`、安装四元数 `[1,0,0,0]`。轮速、目标速度、融合速度和配对轮速的 VOFA 公共接口保留原有定义；依据四份实测 CSV，融合入口按 A 板 `(+vx,+vy)` 处理公共轮速，出口和配对轮速保持 X/Y 同号，不再对 X 取反。公共字段与实物方向仍需实车核对。`CHASSIS_REMOTE_IMU_CONFIG_VERIFIED=0` 不会阻止算法运行，但不能用于证明精度。
 
 需要纯采集对照时，只把 `BOARD_FLASH_1_CHASSIS_REMOTE_IMU_FUSION_ENABLE` 改为 `0`；手动命令同样仅将 `CHASSIS_REMOTE_IMU_FUSION_ENABLE=0` 并改用独立构建目录。双板 CAN 传输与主板遥测继续运行。
 

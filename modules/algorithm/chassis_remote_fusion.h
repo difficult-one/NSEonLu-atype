@@ -21,7 +21,7 @@ typedef enum {
 
 typedef struct {
     /* Fixed body frame follows native A-board axes, centered on the chassis.
-     * For this installation: +X = public backward, +Y = public right, +Z = up. */
+     * Recorded public wheel X/Y use the same signs as this installation. */
     float sensor_to_body_quaternion[4]; /* Hamilton wxyz, sensor to A-board body. */
     float imu_offset_body_m[3]; /* Chassis center to sensor in A-board body axes, m. */
     ChassisVelocityFusionConfig_s filter;
